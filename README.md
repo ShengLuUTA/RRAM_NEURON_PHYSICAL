@@ -29,7 +29,7 @@ measurements. The design sources themselves are not published (see **Repository 
 3. [Background II — spiking neural networks in one page](#background-ii--spiking-neural-networks-in-one-page)
 4. [System concept](#system-concept)
 5. [Build gallery](#build-gallery)
-6. [Measurement results](#measurement-results)
+6. [Results: simulation and measurement](#results-simulation-and-measurement)
 7. [Verification ladder](#verification-ladder)
 8. [Bench, instruments and toolchain](#bench-instruments-and-toolchain)
 9. [Data conventions](#data-conventions)
@@ -306,46 +306,64 @@ because of exactly this.</sub></td>
   recording the internal nodes.</sub>
 </p>
 
-## Measurement results
+## Results: simulation and measurement
 
-### Delay locking survives a 500 ms run
+Two different kinds of evidence appear below, and the difference matters: one figure is a **re-plot of
+samples exported from the circuit simulation**, the other two are **raw oscilloscope screen captures**.
+They are labelled as such in every caption and in `media/README.md`, because a clean matplotlib panel and
+a 100 ms/div scope grab answer different questions — the first says the mechanism works as modelled, the
+second says the copper does too.
+
+### Simulated transient: the loop converges, then holds
 
 <p align="center">
-  <img src="media/waveforms/adaptive_learning_transient_500ms.png" alt="Extended adaptive learning transient" width="820">
+  <img src="media/waveforms/adaptive_learning_transient_500ms.png" alt="Extended adaptive learning transient, simulation re-plot" width="820">
 </p>
 
-One long transient, six stacked traces, 500 ms of activity: the input pair, the calibration/HOLD
+<sub>**This is a simulation, not a scope capture.** The plot was rendered from samples exported by the
+circuit simulation (`R_DEM90` nominal 50 kΩ against 52.5 kΩ as-built, i.e. +5 %; `R_LEAK` 7 kΩ;
+`R_PUMP` 33 kΩ), so both axes are model quantities. It is included because it is the only view that
+covers the loop's whole arc — convergence, HOLD and 38 post-HOLD detection pairs — in one frame. The
+measured counterpart is the pair of screen captures in the next subsection.</sub>
+
+One long transient, six stacked traces, 500 ms of simulated activity: the input pair, the calibration/HOLD
 control, the delay-control node `VCTRL`, the dendrite output `DEND90`, the spike output `SPIKE90`,
 and the extracted delay next to the per-pair spike count. Read it left to right:
 
-* **0–120 ms — learning.** Twelve input pairs are presented. `VCTRL` steps *downward* pair by pair:
-  the charge pump is removing delay-setting resistance because the measured dendrite edge is late
-  against the reference. `DEND90` delay falls with it, in visible steps.
+* **0–120 ms — learning.** Twelve input pairs are applied to the model. `VCTRL` steps *downward* pair
+  by pair: the charge pump is removing delay-setting resistance because the modelled dendrite edge is
+  late against the reference. `DEND90` delay falls with it, in visible steps of about 0.4 ms total.
 * **120 ms — HOLD asserted.** The pump stops, the node freezes, and from here on the delay is a
   stored analogue value, not a servo output.
-* **120–500 ms — detection.** Thirty-eight pairs at a fixed Δt = 1 ms are presented. The spike count
-  per pair is exactly 1 for every pair, and the extracted delay stays inside the ±0.3 % band around
-  the nominal target without any further correction.
+* **120–500 ms — detection.** Thirty-eight pairs at a fixed Δt = 1 ms follow. The spike count per pair
+  is exactly 1 for every pair, and the extracted delay stays inside the ±0.3 % band around the nominal
+  target without any further correction.
 
-That last panel is the point of the whole exercise: the loop does not just converge, it *stays*
-converged once the control input stops driving it. The residual error is set by the resolution of the
-charge pump, not by the initial resistor tolerance — which is what a real RRAM-backed version would
-have to reproduce with a much noisier storage element.
+In simulation, that last panel is the point of the whole exercise: the loop does not just converge, it
+*stays* converged once the control input stops driving it. What the model does not capture is the part
+the bench captures show: leakage, offset shifts and part-to-part variation on the storage node. The
+residual error here is set by the resolution of the charge pump, not by the initial resistor tolerance —
+which is exactly what a real RRAM-backed version would have to reproduce with a much noisier storage
+element.
 
 ### Final bench captures, two builds
 
 <table>
 <tr>
-<td width="50%"><img src="media/waveforms/final_measurement_early.png" alt="Final measurement, early build"><br/>
-<sub><b>Early build</b> — capture at 20:41. Four probe channels, 5 V/div, 100 ms/div, 8192 samples
+<td width="50%"><img src="media/waveforms/final_measurement_early.png" alt="Final measurement, earlier revision"><br/>
+<sub><b>Earlier revision (`EARLY`)</b> — raw capture at 20:41. Four probe channels, 5 V/div, 100 ms/div, 8192 samples
 at 8 kHz. Note the disturbance on the slow channel immediately after the control edge: it recovers,
 but it is the kind of artefact a downstream integrator would happily integrate.</sub></td>
-<td width="50%"><img src="media/waveforms/final_measurement_late.png" alt="Final measurement, late build"><br/>
-<sub><b>Late build</b> — capture at 20:38 on the revised assembly. Probe polarity and channel offsets
+<td width="50%"><img src="media/waveforms/final_measurement_late.png" alt="Final measurement, revised assembly"><br/>
+<sub><b>Revised assembly (`LATE`)</b> — raw capture at 20:38. Probe polarity and channel offsets
 were re-set between runs, so absolutes are not comparable; the shapes are. Each channel now makes a
 single transition, and the slow channel settles smoothly instead of glitching first.</sub></td>
 </tr>
 </table>
+
+<sub>`EARLY` and `LATE` name the module-C circuit revision, not the capture order: by the on-screen
+timestamps the revised assembly was captured first (20:38:14) and the earlier revision at 20:41:08.
+Both are Digilent WaveForms screenshots — 100 ms/div, 5 V/div, 8192 samples at 8 kHz — not re-plots.</sub>
 
 These are deliberately unglamorous captures. A single-neuron board is only worth building if its
 internal nodes can be watched during a control step, and a screenshot of four channels at 100 ms/div
@@ -362,7 +380,7 @@ only reached rung 1 is labelled as such everywhere in this README.
 | 1. Netlist | Transient response of the full neuron over a swept Δt, with realistic op-amp and switch models | Spike for Δt inside the window, silence outside, monotonic edges | Ideal-model sims predicted a window that real parts did not deliver |
 | 2. Breadboard | Same sweep, measured on the instrument | Window centre within ~10 % of the target, one spike per coincidence | Comparator offsets from unmatched resistor dividers pushed the window |
 | 3. Milled board | Same sweep on copper, twice (early and late assemblies) | Reproducible spike/silence decision, no chatter | Mill tolerances shifted the delay; needed the trim network |
-| 4. Loop + HOLD | 500 ms transient with the calibration loop enabled, then frozen | Error decreases per pair, delay holds inside a narrow band, one spike per detection pair | Leakage on the analogue memory moved the delay between runs |
+| 4. Loop + HOLD | 500 ms transient with the calibration loop enabled, then frozen | Error decreases per pair, delay holds inside a narrow band, one spike per detection pair | Leakage on the analogue memory moved the delay between runs. Ladder rung reached in **simulation** — the published transient is a re-plot; on the bench only the control step itself was captured |
 
 Two habits made the ladder useful. First, the sweep is always the same script — the same Δt list, the
 same pulse shape — so a difference between rungs is a difference in the hardware, not in the test.
@@ -485,7 +503,11 @@ put on copper.
 4. 拉高 HOLD 后冻结控制节点，学到的延迟就"存"在模拟节点上；
 5. 20 个节点全部可探，面包板 → 手刻双面板 → 双板测量台，三级验证。
 
-**测到了什么**：500 ms 的瞬态里，前 12 对脉冲在"学"，控制节点逐级下移；HOLD 之后 38 对检测脉冲每一对都恰好产生 1 个脉冲，提取出的延迟稳在目标附近不再漂移。示波器原始截图（100 ms/div、5 V/div、8 kHz 采样）保留在 `media/waveforms/`。
+**得到了什么**：`media/waveforms/` 里的两类证据要分开看，别混。
+
+1. **仿真重绘图** `adaptive_learning_transient_500ms.png`（6 个子图、500 ms 仿真时间）：前 12 对脉冲在"学"，控制节点 `VCTRL` 逐级下移；120 ms 拉高 HOLD 后冻结；之后 38 对检测脉冲每一对都恰好 1 个脉冲，提取出的延迟稳在目标带内不再漂移。纵轴是模型量，**不是示波器截图**。
+2. **示波器原始截图** `final_measurement_early.png` / `final_measurement_late.png`：Digilent WaveForms，四通道、100 ms/div、5 V/div、8192 点 @ 8 kHz，看的是控制跳变之后各节点有没有稳定落位、会不会先抖一下再爬。
+
 
 **仓库边界**：这里只放 `07_Experiment_Media` 里的实验照片与波形结果，以及上面的背景与说明。原理图、网表、PCB 版图、Gerber、BOM、测量工具源码一律不公开；如需评审或合作，请通过 Issue 联系。
 

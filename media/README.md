@@ -18,7 +18,7 @@ traced back to the lab notebook. Nothing was retouched, cropped, colour-correcte
 
 | File | Type | What it shows |
 | --- | --- | --- |
-| `adaptive_learning_transient_500ms.png` | Simulation re-plot of exported samples | 500 ms transient: 12 learning pairs, HOLD at ~120 ms, then 38 detection pairs; inputs, control, `VCTRL`, `DEND90`, `SPIKE90`, extracted delay and per-pair spike count |
+| `adaptive_learning_transient_500ms.png` | **Simulation re-plot** of exported simulation samples (matplotlib figure, not a scope capture) | 500 ms transient: 12 learning pairs, HOLD at ~120 ms, then 38 detection pairs; inputs, control, `VCTRL`, `DEND90`, `SPIKE90`, extracted delay and per-pair spike count. Axes are model time and model volts |
 | `final_measurement_early.png` | Raw scope screen capture (2026-10-24 20:41) | Four probe channels, 5 V/div, 100 ms/div, 8192 samples at 8 kHz — early assembly |
 | `final_measurement_late.png` | Raw scope screen capture (2026-10-24 20:38) | Same settings and probe points — revised assembly, after polarity/offset re-set |
 
