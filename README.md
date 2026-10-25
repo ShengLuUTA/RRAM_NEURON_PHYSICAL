@@ -332,12 +332,16 @@ and the extracted delay next to the per-pair spike count. Read it left to right:
 
 * **0–120 ms — learning.** Twelve input pairs are applied to the model. `VCTRL` steps *downward* pair
   by pair: the charge pump is removing delay-setting resistance because the modelled dendrite edge is
-  late against the reference. `DEND90` delay falls with it, in visible steps of about 0.4 ms total.
+  late against the reference. The extracted delay follows it down from 0.829 ms to 0.824 ms — about
+  4.6 µs of correction in visible steps.
 * **120 ms — HOLD asserted.** The pump stops, the node freezes, and from here on the delay is a
   stored analogue value, not a servo output.
 * **120–500 ms — detection.** Thirty-eight pairs at a fixed Δt = 1 ms follow. The spike count per pair
-  is exactly 1 for every pair, and the extracted delay stays inside the ±0.3 % band around the nominal
-  target without any further correction.
+  is exactly 1 for every pair, and the extracted delay holds flat at 0.829 ms for the whole ~380 ms —
+  no creep, no further correction. Worth reading honestly: the held value sits ~0.6 % above the
+  0.824 ms the loop had reached just before HOLD, and the panel shows that offset instead of hiding it.
+  Flatness across 38 pairs is what the run demonstrates; the residual offset is the kind of thing a
+  write-verify trim on a real RRAM cell would have to remove.
 
 In simulation, that last panel is the point of the whole exercise: the loop does not just converge, it
 *stays* converged once the control input stops driving it. What the model does not capture is the part
@@ -505,7 +509,7 @@ put on copper.
 
 **得到了什么**：`media/waveforms/` 里的两类证据要分开看，别混。
 
-1. **仿真重绘图** `adaptive_learning_transient_500ms.png`（6 个子图、500 ms 仿真时间）：前 12 对脉冲在"学"，控制节点 `VCTRL` 逐级下移；120 ms 拉高 HOLD 后冻结；之后 38 对检测脉冲每一对都恰好 1 个脉冲，提取出的延迟稳在目标带内不再漂移。纵轴是模型量，**不是示波器截图**。
+1. **仿真重绘图** `adaptive_learning_transient_500ms.png`（6 个子图、500 ms 仿真时间）：前 12 对脉冲在"学"，控制节点 `VCTRL` 逐级下移、延迟从 0.829 ms 修到 0.824 ms；120 ms 拉高 HOLD 后冻结；之后 38 对检测脉冲每一对都恰好 1 个脉冲，提取出的延迟一直平在 0.829 ms（相对 HOLD 前的 0.824 ms 有约 0.6% 的残留偏差，图上没有抹掉）。纵轴是模型量，**不是示波器截图**。
 2. **示波器原始截图** `final_measurement_early.png` / `final_measurement_late.png`：Digilent WaveForms，四通道、100 ms/div、5 V/div、8192 点 @ 8 kHz，看的是控制跳变之后各节点有没有稳定落位、会不会先抖一下再爬。
 
 
